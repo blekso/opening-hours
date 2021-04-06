@@ -10,7 +10,12 @@
       <div v-else-if="isClosed">
         <p>-</p>
       </div>
-      <div v-else-if="pairing">
+      <div v-else-if="pairing && !cycleWeek">
+        <div v-for="(str, index) in pairedDays" :key="index">
+          {{ str }}
+        </div>
+      </div>
+      <div v-else-if="pairing && cycleWeek">
         <div v-for="(value, name, index) in pairedDays" :key="index">
           {{ getPairedValue(value) }}: {{ name }}
         </div>
@@ -107,7 +112,7 @@ export default {
       }
     },
     getTimes(index) {
-      if (this.getStartTime(index) !== "" && this.getEndTime(index) !== "") {
+      if (this.getStartTime(index) && this.getEndTime(index)) {
         return this.getStartTime(index) + "-" + this.getEndTime(index);
       } else {
         return this.closedText;
@@ -127,16 +132,42 @@ export default {
       }
     },
     pairedDays() {
-      let newObj = {};
-      this.days.forEach((el, index) => {
-        let key = this.getTimes(index);
-        if (Array.isArray(newObj[key])) {
-          newObj[key].push(el.name);
-        } else {
-          newObj[key] = [el.name];
+      if (!this.cycleWeek) {
+        let newObj = [];
+        for (let i = 0; i < this.filterDays.length; i++) {
+          const currentDayIndex = i;
+          const currentDay = this.getTimes(i);
+          while (
+            i < this.filterDays.length - 1 &&
+            currentDay === this.getTimes(i + 1)
+          ) {
+            console.log(i, this.getDayName(i + 1), this.getTimes(i + 1));
+            i++;
+          }
+          if (currentDayIndex === i) {
+            newObj.push(`${this.getDayName(i)}: ${currentDay}`);
+          } else {
+            newObj.push(
+              `${this.getDayName(currentDayIndex)}-${this.getDayName(
+                i
+              )}: ${currentDay}`
+            );
+          }
         }
-      });
-      return newObj;
+        return newObj;
+      } else {
+        let newObj = {};
+        this.filterDays.forEach((el, index) => {
+          let key = this.getTimes(index);
+          console.log("test");
+          if (Array.isArray(newObj[key])) {
+            newObj[key].push(el.name);
+          } else {
+            newObj[key] = [el.name];
+          }
+        });
+        return newObj;
+      }
     }
   },
   data() {
@@ -155,7 +186,7 @@ export default {
           name: "Tuesday",
           times: [
             {
-              end: "12:00",
+              end: "18:00",
               start: "09:00"
             }
           ]
@@ -195,12 +226,8 @@ export default {
           name: "Sunday",
           times: [
             {
-              end: "12:00",
-              start: "09:00"
-            },
-            {
               end: "18:00",
-              start: "14:00"
+              start: "09:00"
             }
           ]
         }

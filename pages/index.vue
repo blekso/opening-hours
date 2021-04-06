@@ -1,6 +1,6 @@
 <template>
   <div>
-    <OpeningHours />
+    <OpeningHours :pairing="true" :showClosedDays="true" :cycleWeek="true" />
   </div>
 </template>
 
