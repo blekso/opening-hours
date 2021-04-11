@@ -8,7 +8,7 @@
         </p>
       </div>
       <div v-else-if="isClosed">
-        <p>-</p>
+        <p>{{ closedText }}</p>
       </div>
       <div v-else-if="pairing && !cycleWeek">
         <div v-for="(str, index) in pairedDays" :key="index">
@@ -16,9 +16,7 @@
         </div>
       </div>
       <div v-else-if="pairing && cycleWeek">
-        <div v-for="(value, name, index) in pairedDays" :key="index">
-          {{ getPairedValue(value) }}: {{ name }}
-        </div>
+        {{ cycledWeek }}
       </div>
       <div v-else v-for="(item, index) in filterDays" :key="index">
         <p>{{ getDayName(index) }}: {{ getTimes(index) }}</p>
@@ -96,24 +94,40 @@ export default {
         ? this.filterDays[index]?.name
         : this.filterDays[index]?.name.substring(0, 2);
     },
-    getStartTime(index) {
+    getStartTime(index, idx) {
       if (this.locale === "de") {
-        return this.filterDays[index]?.times[0]?.start;
+        return this.filterDays[index]?.times[idx]?.start;
       }
       {
-        return this.filterDays[index]?.times[0]?.start + "am";
+        return this.filterDays[index]?.times[idx]?.start + "am";
       }
     },
-    getEndTime(index) {
+    getEndTime(index, idx) {
       if (this.locale === "de") {
-        return this.filterDays[index]?.times[0]?.end + " Uhr";
+        return this.filterDays[index]?.times[idx]?.end + " Uhr";
       } else {
-        return this.filterDays[index]?.times[0]?.end + "pm";
+        return this.filterDays[index]?.times[idx]?.end + "pm";
       }
     },
-    getTimes(index) {
-      if (this.getStartTime(index) && this.getEndTime(index)) {
-        return this.getStartTime(index) + "-" + this.getEndTime(index);
+    getIndex(index) {
+      if (index > this.filterDays.length) {
+        index = 0;
+      } else if (index < 0) {
+        index = this.filterDays.length - 1;
+      }
+      return index;
+    },
+    getTimes(idx) {
+      if (this.filterDays[idx]?.times.length > 0) {
+        let times = "";
+        this.filterDays[idx].times?.forEach((el, index) => {
+          times +=
+            this.getStartTime(idx, index) + "-" + this.getEndTime(idx, index);
+          if (this.filterDays[idx].times[++index]) {
+            times += " ,";
+          }
+        });
+        return times;
       } else {
         return this.closedText;
       }
@@ -141,7 +155,6 @@ export default {
             i < this.filterDays.length - 1 &&
             currentDay === this.getTimes(i + 1)
           ) {
-            console.log(i, this.getDayName(i + 1), this.getTimes(i + 1));
             i++;
           }
           if (currentDayIndex === i) {
@@ -159,14 +172,28 @@ export default {
         let newObj = {};
         this.filterDays.forEach((el, index) => {
           let key = this.getTimes(index);
-          console.log("test");
           if (Array.isArray(newObj[key])) {
             newObj[key].push(el.name);
           } else {
             newObj[key] = [el.name];
           }
         });
-        return newObj;
+        const keys = Object.keys(newObj);
+        keys.forEach(el => {
+          if (newObj[el].length === 1) {
+            const indexOfEl = this.filterDays.findIndex(
+              e => e.name === newObj[el][0]
+            );
+            var res = "";
+            res =
+              this.getDayName(this.getIndex(indexOfEl - 1)) +
+              "-" +
+              this.getDayName(this.getIndex(indexOfEl + 1)) +
+              ": " +
+              this.getTimes(this.getIndex(indexOfEl + 1));
+            this.cycledWeek = res;
+          }
+        });
       }
     }
   },
@@ -231,7 +258,8 @@ export default {
             }
           ]
         }
-      ]
+      ],
+      cycledWeek: ""
     };
   }
 };
